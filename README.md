@@ -30,3 +30,25 @@ This Project implements a simple event ticket booking system using a smart contr
 2. Use the `create-event` functions to set up your event (contract owner only)
 3. Attendees can use the `buy-ticket` function to purchase tickets
 4. Use `get-ticket-info` and `get-event-info` to retrieve relevant information
+
+## Security Considerations
+
+- Only the contract owner can create events
+- The contract prevents overselling of tickets
+- Each address can only purchase one ticket
+
+## Development
+
+To work with this smart contract:
+
+1. Setup a Stacks blockchain development environment
+2. Deploy the contract using Clarinet or other Stacks deployment tools
+3. Interact with the contract using a Stacks wallet or through API calls
+
+## Disclaimer
+
+This smart contract is a basic implementation and may need additional features and security audits before being used in a production environment.
+
+## Contributing
+
+We welcome contributions to improve this smart contract. Please submit issues and pull requests on the project's Github repository.
