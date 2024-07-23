@@ -21,8 +21,10 @@ This Project implements a simple event ticket booking system using a smart contr
 ### Public Functions
 
 - `buy-ticket`: Enables users to purchase a ticket for the event
+-  `transfer-ticket`: Enables users to transfer a ticket to another address
 - `get-ticket-info`: Retrieves ticket information for a specific owner
 - `get-event-info`: Retrieves general information about the event
+- `check-ticket`: Checks if an address owns a ticket
 
 ## Usage
 
