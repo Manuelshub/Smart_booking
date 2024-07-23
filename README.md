@@ -11,3 +11,22 @@ This Project implements a simple event ticket booking system using a smart contr
 - Track ticket sales and availability
 - Prevent double-booking and overselling
 - Retrieve event and ticket information
+
+## Smart Contract Functions
+
+### Admin Functions
+
+- `create-event`: Allows the contract owner to create a new event
+
+### Public Functions
+
+- `buy-ticket`: Enables users to purchase a ticket for the event
+- `get-ticket-info`: Retrieves ticket information for a specific owner
+- `get-event-info`: Retrieves general information about the event
+
+## Usage
+
+1. Deploy the smart contract to the Stacks blockchain
+2. Use the `create-event` functions to set up your event (contract owner only)
+3. Attendees can use the `buy-ticket` function to purchase tickets
+4. Use `get-ticket-info` and `get-event-info` to retrieve relevant information
