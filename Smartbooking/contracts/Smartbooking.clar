@@ -73,11 +73,13 @@
                         (ok u"Ticket succesfully transferred!")))
             (err err-not-found))))
 
-;; Read-only fuctions
 
 ;; Get ticket information for a specific owner
-(define-read-only (get-ticket-info (owner principal))
-    (ok (map-get? tickets owner)))
+(define-public (get-ticket-info (owner principal))
+    (let ((ticket-id (map-get? tickets owner)))
+        (ok (tuple (owner (var-get ticket-price))))
+))
+;; Read-only fuctions
 
 ;; get general event information
 (define-read-only (get-event-info)
@@ -92,3 +94,41 @@
 ;; Check if an address owns ticket
 (define-read-only (check-ticket (owner principal))
     (is-some (map-get? tickets owner)))
+
+;; Refund a ticket
+(define-public (refund-ticket (buyer principal))
+    ;; Ensure the buyer is valid (basic check since principal is already a secure type)
+    (if (is-eq buyer tx-sender)  ;; Ensure that the buyer is the same as the transaction sender
+        (let 
+            (
+                ;; Fetch the ticket price from the tickets map
+                (maybe-refund-amount (map-get? tickets buyer))
+            )
+            ;; Check if the ticket exists and unwrap the result safely
+            (match maybe-refund-amount
+                refund-amount
+                ;; Proceed with the refund logic if the ticket is found
+                (begin
+                    ;; Transfer the ticket price back to the buyer and check the result
+                    (unwrap! (stx-transfer? refund-amount tx-sender buyer) (err "Transfer failed"))
+
+                    ;; Optionally, delete the ticket from the map to mark it as refunded
+                    (map-delete tickets buyer)
+
+                    ;; Return success
+                    (ok true)
+                )
+                ;; If the ticket is not found, return an error
+                (err "No ticket found for this buyer")
+            )
+        )
+        ;; If the buyer isn't the same as the tx-sender, return an error
+        (err "Invalid buyer principal")
+    )
+)
+
+;; Private function to update the refunded status of a ticket
+(define-private (update-ticket-refunded-status (owner principal))
+    ;; Logic to mark the ticket as refunded, e.g., updating a map or flag
+    (ok true) ;; Placeholder logic for now
+)
