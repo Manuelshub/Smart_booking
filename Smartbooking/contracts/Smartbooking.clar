@@ -15,6 +15,9 @@
 (define-constant err-invalid-name (err u107))
 (define-constant err-invalid-price (err u108))
 (define-constant err-invalid-ticket-count (err u109))
+;; Constants for cancellation
+(define-constant err-not-authorized (err u110))
+(define-constant err-refund-failed (err u111))
 
 ;; Define data variables
 (define-data-var event-name (string-utf8 50) u"")
@@ -134,50 +137,34 @@
 )
 
 ;; Cancel Event
-(define-public (event-cancel (event-id uint))
-    ;; Step 1: Fetch the event details
-    (let ((maybe-event (map-get? events event-id)))
-        (match maybe-event
-            event
-            ;; Proceed if the event exists
-            (let ((organizer (get event-organizer event)))
-                ;; Step 2: Check if the caller is the organizer
-                (if (is-eq tx-sender organizer)
-                    (begin
-                        ;; Step 3: Loop through ticket holders to refund
-                        ;; Assuming ticket holders are stored in the tickets map
-                        (let ((ticket-holders (map-keys tickets)))
-                            (map
-                                (lambda (buyer)
-                                    (let ((maybe-refund-amount (map-get? tickets buyer)))
-                                        ;; Check if theres a ticket for the buyer
-                                        (match maybe-refund-amount
-                                            refund-amount
-                                            (begin
-                                                ;; Process the refund transfer
-                                                (unwrap! (stx-transfer? refund-amount tx-sender buyer) (err "Transfer failed"))
-
-                                                ;; Delete the ticket from the map after refunding
-                                                (asserts! (map-delete tickets buyer) (err "Failed to delete ticket"))
-                                            )
-                                            (err "No ticket found for buyer")
-                                        )
-                                    )
-                                )
-                                ticket-holders
-                            )
-                        )
-
-                        ;; Step 4: Cancel the event by setting its status
-                        (map-set events event-id {event-status: "cancelled"})
-
-                        ;; Confirm the cancellation
-                        (ok true)
-                    )
-                    (err "Only the organizer can cancel the event")
-                )
-            )
-            (err "Event not found")
+(define-public (event-cancel)
+    (begin
+        ;; Check if caller is contract owner
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        
+        ;; Get current ticket price for refunds
+        (let ((current-price (var-get ticket-price)))
+            ;; Process refunds for all ticket holders
+            (map-delete tickets tx-sender)
+            
+            ;; Reset event data
+            (var-set event-name u"")
+            (var-set ticket-price u0)
+            (var-set total-tickets u0)
+            (var-set tickets-sold u0)
+            
+            (ok u"Event successfully cancelled!")
         )
     )
 )
+
+;; Helper function to process refund for a single ticket holder
+(define-private (process-single-refund (holder principal))
+    (let ((ticket-exists (map-get? tickets holder)))
+        (match ticket-exists
+            ticket-id
+            (begin
+                (try! (stx-transfer? (var-get ticket-price) contract-owner holder))
+                (map-delete tickets holder)
+                (ok true))
+            (ok false))))
