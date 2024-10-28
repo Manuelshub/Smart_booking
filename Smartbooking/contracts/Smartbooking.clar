@@ -1,7 +1,7 @@
 ;; title: Smartbooking
 ;; version: 1.0.0
 ;; summary: Smart contract for event ticket booking
-;; description: Allows creation of events, ticket purchases, and ticket transfers
+;; description: Allows creation of events, ticket purchases, ticket transfers and so much more.
 
 ;; Define constants
 (define-constant contract-owner tx-sender)
@@ -131,4 +131,53 @@
 (define-private (update-ticket-refunded-status (owner principal))
     ;; Logic to mark the ticket as refunded, e.g., updating a map or flag
     (ok true) ;; Placeholder logic for now
+)
+
+;; Cancel Event
+(define-public (event-cancel (event-id uint))
+    ;; Step 1: Fetch the event details
+    (let ((maybe-event (map-get? events event-id)))
+        (match maybe-event
+            event
+            ;; Proceed if the event exists
+            (let ((organizer (get event-organizer event)))
+                ;; Step 2: Check if the caller is the organizer
+                (if (is-eq tx-sender organizer)
+                    (begin
+                        ;; Step 3: Loop through ticket holders to refund
+                        ;; Assuming ticket holders are stored in the tickets map
+                        (let ((ticket-holders (map-keys tickets)))
+                            (map
+                                (lambda (buyer)
+                                    (let ((maybe-refund-amount (map-get? tickets buyer)))
+                                        ;; Check if theres a ticket for the buyer
+                                        (match maybe-refund-amount
+                                            refund-amount
+                                            (begin
+                                                ;; Process the refund transfer
+                                                (unwrap! (stx-transfer? refund-amount tx-sender buyer) (err "Transfer failed"))
+
+                                                ;; Delete the ticket from the map after refunding
+                                                (asserts! (map-delete tickets buyer) (err "Failed to delete ticket"))
+                                            )
+                                            (err "No ticket found for buyer")
+                                        )
+                                    )
+                                )
+                                ticket-holders
+                            )
+                        )
+
+                        ;; Step 4: Cancel the event by setting its status
+                        (map-set events event-id {event-status: "cancelled"})
+
+                        ;; Confirm the cancellation
+                        (ok true)
+                    )
+                    (err "Only the organizer can cancel the event")
+                )
+            )
+            (err "Event not found")
+        )
+    )
 )
